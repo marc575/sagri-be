@@ -6,13 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use Illuminate\Http\Request;
 use App\Http\Resources\ActivityResource;
+use Illuminate\Support\Facades\Auth;
 
 class ActivityController extends Controller
 {
 
     public function index()
     {
-        $activities = Activity::all();
+        $user = Auth::user();
+        $activities = $user->activities;
         return ActivityResource::collection($activities);
     }
 
