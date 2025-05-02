@@ -12,7 +12,7 @@ class RegisterInitialRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:farmer,buyer,advisor', // Exemple de rôles
+            'role' => 'required|in:farmer,buyer,admin', // Exemple de rôles
         ];
     }
 }
