@@ -4,51 +4,61 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use Illuminate\Http\Request;
+use App\Models\OrderItem;
+use Illuminate\Http\JsonResponse;
 use App\Http\Resources\OrderResource;
+use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\UpdateOrderRequest;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-
     public function index()
     {
-        $orders = Order::all();
+        $orders = Order::with(['buyer', 'farmer', 'items.product'])->latest()->get();
         return OrderResource::collection($orders);
     }
 
-    public function store(Request $request)
+    public function store(StoreOrderRequest $request)
     {
-        $validated = $request->validate([
-            'buyer_id' => 'required|exists:users,id',
-            'farmer_id' => 'required|exists:users,id',
-            'total_amount' => 'required|numeric',
-            'delivery_type' => 'required|in:pickup,buyer_delivery,farmer_delivery',
-            'delivery_address' => 'nullable|string',
-            'status' => 'required|in:pending,confirmed,cancelled,delivered',
-        ]);
+        $validated = $request->validated();
 
-        $order = Order::create($validated);
+        $order = DB::transaction(function () use ($validated) {
+            $order = Order::create([
+                'buyer_id' => $validated['buyer_id'],
+                'farmer_id' => $validated['farmer_id'],
+                'total_amount' => $validated['total_amount'],
+                'delivery_type' => $validated['delivery_type'],
+                'delivery_address' => $validated['delivery_address'] ?? null,
+                'status' => $validated['status'],
+                'notes' => $validated['notes'] ?? null,
+            ]);
 
-        return new OrderResource($order);
+            foreach ($validated['items'] as $item) {
+                $order->items()->create($item);
+            }
+
+            return $order;
+        });
+
+        $order->load(['buyer', 'farmer', 'items.product']);
+
+        return (new OrderResource($order))->response()->setStatusCode(201);
     }
 
     public function show(Order $order)
     {
+        $order->load(['buyer', 'farmer', 'items.product']);
         return new OrderResource($order);
     }
 
-    public function update(Request $request, Order $order)
+    public function update(UpdateOrderRequest $request, Order $order)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:pending,confirmed,cancelled,delivered',
-        ]);
-
-        $order->update($validated);
-
+        $order->update($request->validated());
         return new OrderResource($order);
     }
 
-    public function destroy(Order $order)
+    public function destroy(Order $order): JsonResponse
     {
         $order->delete();
         return response()->json(['message' => 'Order deleted successfully'], 204);

@@ -18,6 +18,8 @@ class ProductResource extends JsonResource
             'category' => $this->category,
             'user_id' => $this->user_id,
             'project_id' => $this->project_id,
+            'image' => $this->image,
+            'is_organic' => $this->is_organic,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

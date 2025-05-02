@@ -16,6 +16,9 @@ class ProjectResource extends JsonResource
             'activity_id' => $this->activity_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'start_date' => $this->start_date,
+            'end_date' => $this->end_date,
+            'total_surface' => $this->total_surface,
         ];
     }
 }

@@ -26,6 +26,9 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
             'activity_id' => 'required|exists:activities,id',
             'user_id' => 'required|exists:users,id',
+            'start_date' => 'nullable',
+            'end_date' => 'nullable',
+            'total_surface' => 'nullable',
         ]);
 
         $project = Project::create($validated);
@@ -47,6 +50,9 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
             'activity_id' => 'required|exists:activities,id',
             'user_id' => 'required|exists:users,id',
+            'start_date' => 'nullable',
+            'end_date'=> 'nullable',
+            'total_surface' => 'nullable',
         ]);
 
         $project->update($validated);
