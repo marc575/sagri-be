@@ -68,43 +68,143 @@ class ProductController extends Controller
     {
         return new ProductResource($product);
     }
-
+    
     public function update(UpdateProductRequest $request, Product $product)
     {
         $validated = $request->validated();
-
+    
         DB::transaction(function () use ($request, $product, &$validated) {
-            // Gestion de l'image
-            if ($request->hasFile('image')) {
-                $this->handleImageUpload($request, $product, $validated);
+            try {
+                // Gestion de l'image
+                if ($request->hasFile('image')) {
+                    $this->handleImageUpload($request, $product, $validated);
+                }
+    
+                // Mise à jour des timestamps manuellement si nécessaire
+                $validated['updated_at'] = now();
+    
+                // Protection contre la modification de certains champs
+                unset($validated['user_id']); // L'utilisateur ne peut pas être modifié
+                unset($validated['created_at']); // La date de création est immuable
+                unset($validated['id']); // L'ID ne doit jamais être modifié
+    
+                // Mise à jour du produit
+                $product->update($validated);
+    
+            } catch (\Exception $e) {
+                throw $e; // Important pour rollback la transaction
             }
-
-            $product->update($validated);
         });
-
+    
         return new ProductResource($product->fresh());
     }
-
+    
     protected function handleImageUpload($request, $product, &$validated)
     {
         $storage = Storage::disk('public');
         
+        // Validation du fichier image
+        $request->validate([
+            'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+    
         // Suppression de l'ancienne image
-        if ($product->image && $storage->exists($product->image)) {
-            $storage->delete($product->image);
+        if ($product->image) {
+            try {
+                $storage->delete($product->image);
+            } catch (\Exception $e) {
+                throw $e;
+            }
         }
-
+    
         // Enregistrement de la nouvelle image
         $file = $request->file('image');
-        $filename = 'product_'.$product->id.'_'.time().'.'.$file->extension();
+        $filename = 'product_'.$product->id.'_'.time().'.'.$file->guessExtension();
         $path = $file->storeAs('products', $filename, 'public');
         
         $validated['image'] = $path;
+    
+        // Nettoyage des anciennes images du même produit
+        $this->cleanupOldProductImages($product->id, $filename);
     }
-
+    
+    protected function cleanupOldProductImages($productId, $currentFilename)
+    {
+        $storage = Storage::disk('public');
+        $files = $storage->files('products');
+        
+        foreach ($files as $file) {
+            if (str_starts_with($file, "product_{$productId}_") && $file !== "products/{$currentFilename}") {
+                try {
+                    $storage->delete($file);
+                } catch (\Exception $e) {
+                    throw $e;
+                }
+            }
+        }
+    }
     public function destroy(Product $product)
     {
-        $product->delete();
-        return response()->json(['message' => 'Product deleted successfully'], 204);
+        DB::transaction(function () use ($product) {
+            try {
+                // 1. Suppression de l'image associée
+                $this->deleteProductImage($product);
+                
+                // 2. Suppression des éventuelles relations (si nécessaire)
+                // Exemple: $product->orders()->detach();
+                // ou: $product->categories()->detach();
+                
+                // 3. Suppression du produit lui-même
+                $product->delete();
+                
+                // 4. Nettoyage des fichiers résiduels
+                $this->cleanupAllProductImages($product->id);
+                
+            } catch (\Exception $e) {
+                throw $e;
+            }
+        });
+    
+        return response()->json([
+            'message' => 'Product and all associated data deleted successfully',
+            'deleted_id' => $product->id
+        ]);
+    }
+    
+    protected function deleteProductImage(Product $product)
+    {
+        if ($product->image) {
+            try {
+                $storage = Storage::disk('public');
+                
+                // Suppression du fichier principal
+                if ($storage->exists($product->image)) {
+                    $storage->delete($product->image);
+                }
+                
+                // Optionnel: Suppression des thumbnails si vous en générez
+                // $this->deleteThumbnails($product->image);
+                
+            } catch (\Exception $e) {
+                throw $e;
+                // On ne throw pas pour ne pas bloquer la suppression du produit
+            }
+        }
+    }
+    
+    protected function cleanupAllProductImages($productId)
+    {
+        $storage = Storage::disk('public');
+        $files = $storage->files('products');
+        
+        foreach ($files as $file) {
+            if (str_starts_with($file, "product_{$productId}_")) {
+                try {
+                    $storage->delete($file);
+                } catch (\Exception $e) {
+                    throw $e;
+                }
+            }
+        }
     }
 }
