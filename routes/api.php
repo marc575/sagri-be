@@ -18,11 +18,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+    Route::get('/projects/all', [ProjectController::class, 'all']);
     Route::apiResource('projects', ProjectController::class);
     Route::apiResource('activities', ActivityController::class);
+    Route::get('/products/all', [ProductController::class, 'all']);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('orders', OrderController::class);
+    Route::get('/documents/all', [DocumentController::class, 'all']);
     Route::apiResource('documents', DocumentController::class);
+    Route::get('/users', [AuthController::class, 'all']);
+    Route::put('/user', [AuthController::class, 'updateProfile']);
+    Route::get('/users/{id}', [AuthController::class, 'getProfile']);
+    Route::delete('/profiles/{id}', [AuthController::class, 'deleteProfile']);
 });
 
 // Password reset routes

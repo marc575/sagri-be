@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\DocumentResource;
 use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,8 +11,14 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
-
     public function index()
+    {
+        $user = Auth::user();
+        $documents = $user->documents;
+        return DocumentResource::collection($documents);
+    }
+
+    public function all()
     {
         $documents = Document::all();
         return response()->json($documents);

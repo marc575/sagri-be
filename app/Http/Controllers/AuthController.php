@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
@@ -112,5 +113,83 @@ class AuthController extends Controller
         $user->save();
         
         return response()->json(['message' => 'Password changed successfully']);
+    }
+
+    public function updateProfile(ProfileUpdateRequest $request)
+    {
+        $user = $request->user();
+        $updateData = $request->validated();
+
+        // Gestion de la photo de profil
+        if ($request->hasFile('profile_picture')) {
+            // Supprime l'ancienne photo si elle existe
+            if ($user->profile_picture) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+            
+            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+            $updateData['profile_picture'] = $path;
+        }
+
+        $user->update($updateData);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh()
+        ]);
+    }
+
+    public function all(Request $request)
+    {
+        // Vérification des droits admin
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $users = User::query()
+            ->when($request->role, fn($q, $role) => $q->where('role', $role))
+            ->when($request->search, fn($q, $search) => $q->where('name', 'like', "%{$search}%"))
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $users,
+            'message' => 'Profiles retrieved successfully'
+        ]);
+    }
+
+    public function deleteProfile(Request $request, $id)
+    {
+        // Vérification des droits admin
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $userToDelete = User::findOrFail($id);
+
+        // Empêche l'auto-suppression
+        if ($userToDelete->id === $request->user()->id) {
+            return response()->json(['message' => 'You cannot delete your own account'], 422);
+        }
+
+        // Suppression de la photo de profil si elle existe
+        if ($userToDelete->profile_picture) {
+            Storage::disk('public')->delete($userToDelete->profile_picture);
+        }
+
+        $userToDelete->delete();
+
+        return response()->json([
+            'message' => 'Profile deleted successfully'
+        ], 204);
+    }
+
+    public function getProfile($id)
+    {
+        $user = User::findOrFail($id);
+
+        return response()->json([
+            'data' => $user,
+            'message' => 'Profile retrieved successfully'
+        ]);
     }
 }

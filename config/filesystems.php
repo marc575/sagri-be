@@ -68,6 +68,14 @@ return [
             'visibility' => 'public',
         ],
 
+        // Ajoutez ce disk si vous voulez un espace dédié aux photos de produit
+        'image' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/image'),
+            'url' => env('APP_URL').'/storage/image',
+            'visibility' => 'public',
+        ],
+
     ],
 
     /*

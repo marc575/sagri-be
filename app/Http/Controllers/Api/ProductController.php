@@ -3,24 +3,38 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Resources\ProductResource;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-
     public function index()
     {
-        $products = Product::all();
+        $user = Auth::user();
+        $products = $user->products;
         return ProductResource::collection($products);
     }
-
+    
+    public function all(Request $request)
+    {
+        $products = Product::query()
+            ->with(['user:id,name', 'project:id,name']) // Chargement optimisé des relations
+            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->when($request->category, fn($q, $category) => $q->where('category', $category))
+            ->when($request->organic, fn($q) => $q->where('is_organic', true))
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->per_page ?? 20);
+    
+        return ProductResource::collection($products);
+    }
+    
     public function store(Request $request)
     {
-        $product = $request->product();
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -31,17 +45,17 @@ class ProductController extends Controller
             'user_id' => 'required|exists:users,id',
             'project_id' => 'nullable|exists:projects,id',
             'status' => 'nullable|string',
-            'is_organic' => 'required|boolean',
+            'is_organic' => 'required|integer|in:0,1',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         if ($request->hasFile('image')) {
             // Supprime l'ancienne photo si elle existe
-            if ($product->image) {
-                Storage::disk('public')->delete($product->image);
+            if ($request->image) {
+                Storage::disk('public')->delete($request->image);
             }
             
-            $path = $request->file('image')->store('image');
+            $path = $request->file('image')->store('image', 'public');
             $validated['image'] = $path;
         }
 
@@ -55,33 +69,37 @@ class ProductController extends Controller
         return new ProductResource($product);
     }
 
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'quantity_available' => 'required|integer',
-            'unit' => 'required|string|max:50',
-            'price_per_unit' => 'required|numeric',
-            'category' => 'required|string|max:255',
-            'status' => 'nullable|string',
-            'is_organic' => 'required|boolean',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
+        $validated = $request->validated();
 
-        if ($request->hasFile('image')) {
-            // Supprime l'ancienne photo si elle existe
-            if ($product->image) {
-                Storage::disk('public')->delete($product->image);
+        DB::transaction(function () use ($request, $product, &$validated) {
+            // Gestion de l'image
+            if ($request->hasFile('image')) {
+                $this->handleImageUpload($request, $product, $validated);
             }
-            
-            $path = $request->file('image')->store('image');
-            $validated['image'] = $path;
+
+            $product->update($validated);
+        });
+
+        return new ProductResource($product->fresh());
+    }
+
+    protected function handleImageUpload($request, $product, &$validated)
+    {
+        $storage = Storage::disk('public');
+        
+        // Suppression de l'ancienne image
+        if ($product->image && $storage->exists($product->image)) {
+            $storage->delete($product->image);
         }
 
-        $product->update($validated);
-
-        return new ProductResource($product);
+        // Enregistrement de la nouvelle image
+        $file = $request->file('image');
+        $filename = 'product_'.$product->id.'_'.time().'.'.$file->extension();
+        $path = $file->storeAs('products', $filename, 'public');
+        
+        $validated['image'] = $path;
     }
 
     public function destroy(Product $product)

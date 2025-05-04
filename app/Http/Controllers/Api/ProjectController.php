@@ -6,13 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use App\Http\Resources\ProjectResource; // Utilisation de resources pour structurer la réponse
-
+use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
 {
+    public function index()
+    {
+        $user = Auth::user();
+        $projects = $user->projects;
+        return ProjectResource::collection($projects);
+    }
 
     // Récupérer tous les projets
-    public function index()
+    public function all()
     {
         $projects = Project::all(); // Récupération de tous les projets
         return ProjectResource::collection($projects); // Utilisation de la resource pour la réponse

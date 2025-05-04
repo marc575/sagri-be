@@ -13,8 +13,7 @@ class ActivityController extends Controller
 
     public function index()
     {
-        $user = Auth::user();
-        $activities = $user->activities;
+        $activities = Activity::all();
         return ActivityResource::collection($activities);
     }
 
