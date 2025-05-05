@@ -115,3 +115,39 @@ Réponse JSON structurée
 Code HTTP 422 (Unprocessable Entity)
 
 Messages d'erreur explicites
+
+Sécurité renforcée :
+
+Protection des champs sensibles (email, role, status)
+
+Hachage du mot de passe si fourni
+
+Transactions pour garantir l'intégrité des données
+
+Gestion des fichiers :
+
+Suppression propre de l'ancienne photo
+
+Nettoyage des images obsolètes
+
+Validation du type de fichier
+
+Structure modulaire :
+
+Méthodes séparées pour chaque responsabilité
+
+Gestion d'erreur détaillée
+
+Logging pour le débogage
+
+Flexibilité :
+
+Accepte des mises à jour partielles (sometimes dans les règles)
+
+Compatible avec votre workflow existant
+
+Retour cohérent :
+
+Format de réponse similaire à vos autres méthodes
+
+Données utilisateur fraîchement chargées

@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegisterInitialRequest;
 use App\Http\Requests\RegisterCompleteRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
@@ -70,6 +72,86 @@ class AuthController extends Controller
             'user' => $user->fresh(), // Recharge les données fraîches
         ]);
     }
+
+    public function updateProfile(UpdateProfileRequest $request)
+    {
+        $user = $request->user();
+        $updateData = $request->validated();
+
+        DB::transaction(function () use ($user, $request, &$updateData) {
+            try {
+                // Gestion de la photo de profil
+                if ($request->hasFile('profile_picture')) {
+                    $this->updateProfilePicture($user, $request->file('profile_picture'), $updateData);
+                }
+
+                // Gestion du mot de passe si fourni
+                if (!empty($updateData['password'])) {
+                    $updateData['password'] = Hash::make($updateData['password']);
+                } else {
+                    unset($updateData['password']);
+                }
+
+                // Protection des champs sensibles
+                unset($updateData['email']); // L'email ne peut pas être modifié ici
+                unset($updateData['role']); // Le rôle ne peut pas être modifié ici
+                unset($updateData['status']); // Le statut est géré séparément
+
+                // Mise à jour de l'utilisateur
+                $user->update($updateData);
+
+            } catch (\Exception $e) {
+                throw $e;
+            }
+        });
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh(),
+        ]);
+    }
+
+    protected function updateProfilePicture($user, $file, &$updateData)
+    {
+        $storage = Storage::disk('public');
+        
+        // Validation du fichier
+        if (!$file->isValid()) {
+            throw new \Exception('Invalid profile picture file');
+        }
+
+        // Suppression de l'ancienne image
+        if ($user->profile_picture && $storage->exists($user->profile_picture)) {
+            $storage->delete($user->profile_picture);
+        }
+
+        // Enregistrement de la nouvelle image
+        $filename = 'user_'.$user->id.'_'.time().'.'.$file->extension();
+        $path = $file->storeAs('profile_pictures', $filename, 'public');
+        
+        $updateData['profile_picture'] = $path;
+
+        // Nettoyage des anciennes images du même utilisateur
+        $this->cleanupOldProfilePictures($user->id, $filename);
+    }
+
+    protected function cleanupOldProfilePictures($userId, $currentFilename)
+    {
+        $storage = Storage::disk('public');
+        $files = $storage->files('profile_pictures');
+        
+        foreach ($files as $file) {
+            if (str_starts_with($file, "profile_pictures/user_{$userId}_") && 
+                $file !== "profile_pictures/{$currentFilename}") {
+                try {
+                    $storage->delete($file);
+                } catch (\Exception $e) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
     public function login(LoginRequest $request)
     {
         if (!Auth::attempt($request->only('email', 'password'))) {
@@ -113,30 +195,6 @@ class AuthController extends Controller
         $user->save();
         
         return response()->json(['message' => 'Password changed successfully']);
-    }
-
-    public function updateProfile(ProfileUpdateRequest $request)
-    {
-        $user = $request->user();
-        $updateData = $request->validated();
-
-        // Gestion de la photo de profil
-        if ($request->hasFile('profile_picture')) {
-            // Supprime l'ancienne photo si elle existe
-            if ($user->profile_picture) {
-                Storage::disk('public')->delete($user->profile_picture);
-            }
-            
-            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-            $updateData['profile_picture'] = $path;
-        }
-
-        $user->update($updateData);
-
-        return response()->json([
-            'message' => 'Profile updated successfully',
-            'user' => $user->fresh()
-        ]);
     }
 
     public function all(Request $request)

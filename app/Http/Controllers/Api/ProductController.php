@@ -120,7 +120,7 @@ class ProductController extends Controller
         // Enregistrement de la nouvelle image
         $file = $request->file('image');
         $filename = 'product_'.$product->id.'_'.time().'.'.$file->guessExtension();
-        $path = $file->storeAs('products', $filename, 'public');
+        $path = $file->storeAs('image', $filename, 'public');
         
         $validated['image'] = $path;
     
@@ -131,7 +131,7 @@ class ProductController extends Controller
     protected function cleanupOldProductImages($productId, $currentFilename)
     {
         $storage = Storage::disk('public');
-        $files = $storage->files('products');
+        $files = $storage->files('image');
         
         foreach ($files as $file) {
             if (str_starts_with($file, "product_{$productId}_") && $file !== "products/{$currentFilename}") {
@@ -195,7 +195,7 @@ class ProductController extends Controller
     protected function cleanupAllProductImages($productId)
     {
         $storage = Storage::disk('public');
-        $files = $storage->files('products');
+        $files = $storage->files('image');
         
         foreach ($files as $file) {
             if (str_starts_with($file, "product_{$productId}_")) {
