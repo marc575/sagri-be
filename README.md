@@ -1,153 +1,105 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+Ce projet est une application de démarrage basée sur **Laravel 12**, intégrant l'authentification via les réseaux sociaux (Google & Facebook), une API sécurisée avec **Laravel Sanctum**, et un ensemble complet d'outils pour le développement moderne.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 🧾 Description
 
-## About Laravel
+Ce dépôt contient la structure de base d'une application Laravel prête à l'emploi. Il inclut :
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Authentification via **Google** et **Facebook** grâce à Laravel Socialite.
+- Authentification API avec **Sanctum**.
+- Tests automatisés avec **PHPUnit**.
+- Serveur local, gestion de file d'attente, logs temps réel, et Vite via une commande `dev` unique.
+- Outils de qualité de code : **Pint**, **Pail**, **Collision**, **Mockery**.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## ⚙️ Prérequis
 
-## Learning Laravel
+- PHP ≥ 8.2
+- Composer
+- Node.js & NPM
+- SQLite (ou autre base de données)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🚀 Installation
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+git clone <url-du-repo>
+cd <nom-du-repo>
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate --graceful
+````
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🧪 Lancer l'environnement de développement
 
-### Premium Partners
+```bash
+composer run dev
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
+Cette commande démarre :
 
-## Contributing
+* Le serveur Laravel
+* Le listener de queue
+* La visualisation des logs (Pail)
+* Vite pour le front-end
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## 🔐 Authentification sociale
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+L'application prend en charge l'authentification via :
 
-## Security Vulnerabilities
+* Google
+* Facebook
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Configuration
 
-## License
+Ajoute les clés suivantes à ton fichier `.env` :
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```env
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:8000/login/google/callback
 
+FACEBOOK_CLIENT_ID=...
+FACEBOOK_CLIENT_SECRET=...
+FACEBOOK_REDIRECT_URI=http://localhost:8000/login/facebook/callback
+```
 
+---
 
+## 🧪 Tests
 
-Fonctionnement du processus :
-Première étape :
+```bash
+composer run test
+```
 
-L'utilisateur fournit email, mot de passe, nom et rôle
+---
 
-Un compte est créé avec le statut "pending"
+## 🧰 Outils inclus
 
-Il reçoit un token d'accès pour les requêtes authentifiées
+* **Sanctum** : pour sécuriser les APIs
+* **Socialite** & **SocialiteProviders** : login via réseaux sociaux
+* **Pail** : visualisation de logs en temps réel
+* **Pint** : formatage automatique du code
+* **Sail** (optionnel) : environnement Docker
+* **PHPUnit** : tests unitaires
+* **Mockery** : mocks pour tests
 
-Deuxième étape (authentifiée) :
+---
 
-L'utilisateur complète son profil avec les informations supplémentaires
+## 📄 Licence
 
-Le statut passe à "active" une fois le profil complété
+Ce projet est sous licence **MIT**.
 
-La route est protégée par le middleware auth
+---
 
+## ✨ Auteur
 
-Un stockage sécurisé des photos de profil
-
-Une URL publique accessible
-
-Une gestion propre des fichiers
-
-La possibilité de supprimer/modifier les photos
-
-Un système testable
-
-
-Validation stricte :
-
-Vérifie que le fichier est bien une image
-
-Formats acceptés : jpeg, png, jpg, webp
-
-Taille max : 2MB (2048KB)
-
-Dimensions : entre 100x100px et 2000x2000px
-
-Journalisation des erreurs :
-
-Log détaillé en cas d'échec de validation
-
-Capture le nom, taille et type MIME du fichier
-
-Retour d'erreur clair :
-
-Réponse JSON structurée
-
-Code HTTP 422 (Unprocessable Entity)
-
-Messages d'erreur explicites
-
-Sécurité renforcée :
-
-Protection des champs sensibles (email, role, status)
-
-Hachage du mot de passe si fourni
-
-Transactions pour garantir l'intégrité des données
-
-Gestion des fichiers :
-
-Suppression propre de l'ancienne photo
-
-Nettoyage des images obsolètes
-
-Validation du type de fichier
-
-Structure modulaire :
-
-Méthodes séparées pour chaque responsabilité
-
-Gestion d'erreur détaillée
-
-Logging pour le débogage
-
-Flexibilité :
-
-Accepte des mises à jour partielles (sometimes dans les règles)
-
-Compatible avec votre workflow existant
-
-Retour cohérent :
-
-Format de réponse similaire à vos autres méthodes
-
-Données utilisateur fraîchement chargées
+Développé par Tatchou Marc.
